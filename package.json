@@ -1,0 +1,1 @@
+{"dependencies":{"express":"^4.19.2","multer":"^1.4.5-lts.1"},"description":"Apna khud ka bot hosting panel — Railway par host karo, andar jitne chaho bots chalao. Git repo ya ZIP upload, dono se deploy.","engines":{"node":">=18.0.0"},"license":"MIT","main":"server.js","name":"bot-panel-zip","scripts":{"start":"node server.js"},"version":"1.1.0"}

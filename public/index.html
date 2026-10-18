@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BotPanel — My Bot Host</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0f1420; color: #e6ebf4; min-height: 100vh; }
+  header { background: #151c2e; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #232c44; position: sticky; top: 0; z-index: 10; }
+  header h1 { font-size: 20px; } header h1 span { color: #5aa2ff; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  .card { background: #151c2e; border: 1px solid #232c44; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+  .card h2 { font-size: 16px; margin-bottom: 14px; color: #9fb3d8; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  label { display: block; font-size: 12px; color: #8fa0c2; margin-bottom: 4px; }
+  input, textarea, select { width: 100%; background: #0c1120; border: 1px solid #2a3550; color: #e6ebf4; border-radius: 8px; padding: 10px 12px; font-size: 14px; font-family: monospace; }
+  textarea { min-height: 90px; resize: vertical; }
+  input:focus, textarea:focus { outline: none; border-color: #5aa2ff; }
+  .full { grid-column: 1 / -1; }
+  button { cursor: pointer; border: none; border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 600; }
+  .btn-primary { background: #2f7cf6; color: #fff; margin-top: 12px; }
+  .btn-primary:hover { background: #4a90ff; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; margin: 2px; }
+  .b-green { background: #1d5c38; color: #7dffb0; } .b-red { background: #6e2430; color: #ffa4b0; }
+  .b-blue { background: #274a7d; color: #a9ccff; } .b-gray { background: #2a3350; color: #c3cede; }
+  .b-orange { background: #6e4a1f; color: #ffd9a3; }
+  #bots { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .bot { background: #151c2e; border: 1px solid #232c44; border-radius: 12px; padding: 16px; }
+  .bot-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .bot-name { font-weight: 700; font-size: 16px; word-break: break-all; }
+  .pill { font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; }
+  .p-running { background: #123f26; color: #4be585; } .p-stopped { background: #3a3f52; color: #aab4cf; }
+  .p-error { background: #571f28; color: #ff8fa0; } .p-working { background: #4d3a14; color: #ffcf6e; }
+  .bot-repo { font-size: 12px; color: #7d8db1; word-break: break-all; margin-bottom: 10px; font-family: monospace; }
+  .bot-meta { font-size: 12px; color: #7d8db1; margin-bottom: 10px; }
+  .bot-err { font-size: 12px; color: #ff9aa8; background: #2a1218; border-radius: 8px; padding: 8px; margin-bottom: 10px; white-space: pre-wrap; max-height: 120px; overflow: auto; font-family: monospace; }
+  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 50; padding: 40px 20px; }
+  .modal.open { display: block; }
+  .modal-box { background: #151c2e; border: 1px solid #2a3550; border-radius: 12px; max-width: 900px; margin: 0 auto; max-height: 85vh; display: flex; flex-direction: column; }
+  .modal-head { padding: 14px 18px; border-bottom: 1px solid #232c44; display: flex; justify-content: space-between; align-items: center; }
+  .modal-body { padding: 0; overflow: auto; flex: 1; }
+  pre.logs { padding: 16px 18px; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-break: break-all; font-family: monospace; color: #c9d6ef; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1d2740; border: 1px solid #2f7cf6; padding: 12px 20px; border-radius: 10px; font-size: 14px; display: none; z-index: 100; }
+  .hint { font-size: 12px; color: #7d8db1; margin-top: 8px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🤖 Bot<span>Panel</span></h1>
+  <button class="btn-sm b-gray" onclick="loadBots()">↻ Refresh</button>
+</header>
+<main>
+  <div class="card">
+    <h2>＋ Naya Bot Add Karo</h2>
+    <div style="margin-bottom:12px">
+      <button class="btn-sm b-blue" id="tabGitBtn" onclick="showTab('git')">🔗 Git Repo</button>
+      <button class="btn-sm b-gray" id="tabZipBtn" onclick="showTab('zip')">📦 ZIP Upload</button>
+    </div>
+    <div id="tab-git">
+      <div class="grid2">
+        <div><label>Bot ka naam</label><input id="f-name" placeholder="merabot"></div>
+        <div><label>GitHub repo URL</label><input id="f-repo" placeholder="https://github.com/user/bot"></div>
+        <div><label>Branch (khali = default branch)</label><input id="f-branch" placeholder="khali chhoro"></div>
+        <div><label>Start command (khali = auto detect)</label><input id="f-start" placeholder="khali chhoro"></div>
+        <div class="full"><label>Install command (khali = auto detect)</label><input id="f-install" placeholder="yarn install"></div>
+        <div class="full"><label>Environment variables (har line par KEY=value)</label><textarea id="f-env" placeholder="SESSION_ID=abc123&#10;PREFIX=.&#10;DATABASE_URL=/data/database.db"></textarea></div>
+      </div>
+      <button class="btn-primary" onclick="addBot()">Add Bot</button>
+      <div class="hint">Sirf <b>naam</b> aur <b>repo URL</b> lazmi hain — install/start command panel khud detect kar lega (npm/yarn/pnpm, TypeScript build, node/python entry).</div>
+    </div>
+    <div id="tab-zip" style="display:none">
+      <div class="grid2">
+        <div><label>Bot ka naam</label><input id="fz-name" placeholder="merabot"></div>
+        <div><label>ZIP file (bot ka code)</label><input id="fz-file" type="file" accept=".zip"></div>
+        <div><label>Start command (khali = auto detect)</label><input id="fz-start" placeholder="khali chhoro"></div>
+        <div class="full"><label>Install command (khali = auto detect)</label><input id="fz-install" placeholder="khali chhoro"></div>
+        <div class="full"><label>Environment variables (har line par KEY=value)</label><textarea id="fz-env" placeholder="SESSION_ID=abc123&#10;PREFIX=."></textarea></div>
+      </div>
+      <button class="btn-primary" onclick="uploadBot()">📦 Upload &amp; Deploy</button>
+      <div class="hint">Apne bot ke code ki <b>.zip</b> file upload karo — panel khud extract + install kar dega (max 250MB). Update ke liye baad me bot card par <b>⬆ ZIP Update</b> dabana.</div>
+    </div>
+  </div>
+  <div id="bots"></div>
+</main>
+
+<div class="modal" id="logModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <b id="logTitle">Logs</b>
+      <div>
+        <button class="btn-sm b-blue" onclick="refreshLogs()">↻</button>
+        <button class="btn-sm b-gray" onclick="closeModal('logModal')">✕ Band</button>
+      </div>
+    </div>
+    <div class="modal-body"><pre class="logs" id="logBody">...</pre></div>
+  </div>
+</div>
+
+<div class="modal" id="envModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <b id="envTitle">Settings</b>
+      <button class="btn-sm b-gray" onclick="closeModal('envModal')">✕ Band</button>
+    </div>
+    <div class="modal-body" style="padding:16px">
+      <label>Start command (khali = auto detect)</label>
+      <input id="setStart" style="margin-bottom:12px" placeholder="khali = auto detect">
+      <label>Install command (khali = auto detect)</label>
+      <input id="setInstall" style="margin-bottom:12px" placeholder="khali = auto detect">
+      <label>Environment variables (har line par KEY=value)</label>
+      <textarea id="envText" style="min-height:160px" placeholder="KEY=value har line par"></textarea>
+      <div class="hint">Save ke baad <b>Redeploy</b> dabao taake install dobara chale, ya <b>Restart</b> taake nayi settings apply hon.</div>
+      <button class="btn-primary" onclick="saveEnv()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentLogBot = null, currentEnvBot = null, currentEnvKeys = [];
+const $ = id => document.getElementById(id);
+
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', 3000);
+}
+async function api(method, url, body) {
+  const r = await fetch(url, { method, headers: {'Content-Type':'application/json'}, body: body ? JSON.stringify(body) : undefined });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || 'Error');
+  return j;
+}
+function pill(b) {
+  const map = { running:'p-running', stopped:'p-stopped', error:'p-error', cloning:'p-working', extracting:'p-working', installing:'p-working', restarting:'p-working', starting:'p-working' };
+  const label = { running:'● running', stopped:'○ stopped', error:'✕ error', cloning:'cloning…', extracting:'extracting…', installing:'installing…', restarting:'restarting…', starting:'starting…' };
+  return `<span class="pill ${map[b.status]||'p-stopped'}">${label[b.status]||b.status}</span>`;
+}
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function loadBots() {
+  try {
+    const { bots } = await api('GET', '/api/bots');
+    $('bots').innerHTML = bots.length ? '' : '<div class="card">Koi bot nahi — upar se add karo.</div>';
+    for (const b of bots) {
+      const el = document.createElement('div');
+      el.className = 'bot';
+      el.innerHTML = `
+        <div class="bot-head"><span class="bot-name">${esc(b.name)}</span>${pill(b)}</div>
+        <div class="bot-repo">${b.source === 'zip' ? '📦 ZIP upload' : esc(b.repo)}</div>
+        <div class="bot-meta">${b.source === 'zip' ? 'zip' : 'branch: ' + esc(b.branch)} · start: <code>${esc(b.startCmd)}</code>${b.port?` · port: ${b.port}`:''}${b.restarts?` · restarts: ${b.restarts}`:''}</div>
+        ${b.lastError ? `<div class="bot-err">${esc(b.lastError)}</div>` : ''}
+        <div>
+          <button class="btn-sm b-green" onclick="act('${b.name}','start')">▶ Start</button>
+          <button class="btn-sm b-red" onclick="act('${b.name}','stop')">⏹ Stop</button>
+          <button class="btn-sm b-blue" onclick="act('${b.name}','restart')">↻ Restart</button>
+          ${b.source === 'zip'
+            ? `<button class="btn-sm b-orange" onclick="redeployUpload('${b.name}')">⬆ ZIP Update</button>`
+            : `<button class="btn-sm b-orange" onclick="act('${b.name}','redeploy')">⬇ Redeploy</button>`}
+          <button class="btn-sm b-blue" onclick="autofix('${b.name}')">🛠 Auto-fix</button>
+          <button class="btn-sm b-gray" onclick="openLogs('${b.name}')">📜 Logs</button>
+          <button class="btn-sm b-gray" onclick="openEnv('${b.name}')">⚙ Env</button>
+          <button class="btn-sm b-red" onclick="del('${b.name}')">🗑</button>
+        </div>`;
+      $('bots').appendChild(el);
+    }
+  } catch(e) { toast('Load failed: ' + e.message); }
+}
+async function addBot() {
+  const body = { name: $('f-name').value.trim(), repo: $('f-repo').value.trim(), branch: $('f-branch').value.trim(), startCmd: $('f-start').value.trim(), installCmd: $('f-install').value.trim(), env: $('f-env').value };
+  if (!body.name || !body.repo) return toast('Naam aur repo URL zaroori hai');
+  try { await api('POST', '/api/bots', body); toast('Bot add ho gaya — clone/install ho raha hai'); loadBots(); }
+  catch(e) { toast(e.message); }
+}
+function showTab(t) {
+  $('tab-git').style.display = t === 'git' ? '' : 'none';
+  $('tab-zip').style.display = t === 'zip' ? '' : 'none';
+  $('tabGitBtn').className = 'btn-sm ' + (t === 'git' ? 'b-blue' : 'b-gray');
+  $('tabZipBtn').className = 'btn-sm ' + (t === 'zip' ? 'b-blue' : 'b-gray');
+}
+async function uploadBot() {
+  const name = $('fz-name').value.trim();
+  const file = $('fz-file').files[0];
+  if (!name) return toast('Naam zaroori hai');
+  if (!file) return toast('ZIP file select karo');
+  const fd = new FormData();
+  fd.append('zipfile', file);
+  fd.append('name', name);
+  fd.append('startCmd', $('fz-start').value.trim());
+  fd.append('installCmd', $('fz-install').value.trim());
+  fd.append('env', $('fz-env').value);
+  toast('ZIP upload ho rahi hai…');
+  try {
+    const r = await fetch('/api/bots/upload', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (!j.ok) throw new Error(j.error || 'Error');
+    toast('Bot add ho gaya — extract/install ho raha hai');
+    $('fz-name').value = ''; $('fz-file').value = '';
+    loadBots();
+  } catch(e) { toast(e.message); }
+}
+async function redeployUpload(name) {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = '.zip';
+  inp.onchange = async () => {
+    const file = inp.files[0];
+    if (!file) return;
+    if (!confirm(`"${name}" ka code nayi ZIP se replace kar dun?`)) return;
+    const fd = new FormData();
+    fd.append('zipfile', file);
+    toast('ZIP upload ho rahi hai…');
+    try {
+      const r = await fetch(`/api/bots/${encodeURIComponent(name)}/redeploy-upload`, { method: 'POST', body: fd });
+      const j = await r.json();
+      if (!j.ok) throw new Error(j.error || 'Error');
+      toast('ZIP update ho gaya ✓'); setTimeout(loadBots, 800);
+    } catch(e) { toast(e.message); }
+  };
+  inp.click();
+}
+async function act(name, a) {
+  try { await api('POST', `/api/bots/${name}/${a}`); toast(a + ' ✓'); setTimeout(loadBots, 800); }
+  catch(e) { toast(e.message); }
+}
+async function del(name) {
+  if (!confirm(`"${name}" delete kar dun? Code aur logs sab mit jayenge.`)) return;
+  try { await api('DELETE', `/api/bots/${name}`); toast('Deleted'); loadBots(); }
+  catch(e) { toast(e.message); }
+}
+async function autofix(name) {
+  if (!confirm(`"${name}" ka auto-fix chalau? Commands reset hokar dobara detect honge.`)) return;
+  toast('Auto-fix chal raha hai…');
+  try { await api('POST', `/api/bots/${name}/autofix`); toast('Auto-fix complete'); }
+  catch(e) { toast(e.message); }
+  setTimeout(loadBots, 1500);
+}
+async function openLogs(name) {
+  currentLogBot = name; $('logTitle').textContent = '📜 ' + name + ' — logs';
+  $('logModal').classList.add('open'); await refreshLogs();
+}
+async function refreshLogs() {
+  if (!currentLogBot) return;
+  try { const { logs } = await api('GET', `/api/bots/${currentLogBot}/logs?lines=300`); $('logBody').textContent = logs; }
+  catch(e) { $('logBody').textContent = 'Error: ' + e.message; }
+}
+async function openEnv(name) {
+  currentEnvBot = name; $('envTitle').textContent = '⚙ ' + name + ' — settings';
+  $('envText').value = '(load ho raha hai…)'; $('envModal').classList.add('open');
+  try {
+    const { bot } = await api('GET', `/api/bots/${name}`);
+    currentEnvKeys = bot.envKeys || [];
+    $('setStart').value = bot.startCmd || '';
+    $('setInstall').value = bot.installCmd || '';
+    $('envText').value = '';
+    $('envText').placeholder = 'Maujooda keys: ' + (currentEnvKeys.join(', ') || 'koi nahi') + '\nNayi values yahan likho (KEY=value har line par). Purani keys dobara likhni hongi warna mit jayengi.';
+  } catch(e) { $('envText').value = ''; toast(e.message); }
+}
+async function saveEnv() {
+  try {
+    await api('POST', `/api/bots/${currentEnvBot}/settings`, { env: $('envText').value, startCmd: $('setStart').value, installCmd: $('setInstall').value });
+    toast('Saved — ab Redeploy ya Restart karo'); closeModal('envModal');
+  }
+  catch(e) { toast(e.message); }
+}
+function closeModal(id) { $(id).classList.remove('open'); }
+loadBots();
+setInterval(loadBots, 10000);
+</script>
+</body>
+</html>
